@@ -1,45 +1,29 @@
- #!/usr/bin/python3
-"""Script that gets user data (Todo list) from API
-and then export the result to a JSON file."""
+#!/usr/bin/python3
+"""Module"""
 
-import json
 import requests
-
-
-def main():
-    """Main function"""
-
-    # Fetch all todos
-    todo_url = 'https://jsonplaceholder.typicode.com/todos'
-    todos = requests.get(todo_url).json()
-
-    # Fetch all users in one request
-    users_url = 'https://jsonplaceholder.typicode.com/users'
-    users = requests.get(users_url).json()
-
-    # Create a dictionary of userId to username
-    user_dict = {user["id"]: user["username"] for user in users}
-
-    output = {}
-
-    for todo in todos:
-        user_id = todo['userId']
-        username = user_dict[user_id]  # Get username from pre-fetched data
-
-        if user_id not in output:
-            output[user_id] = []
-
-        output[user_id].append({
-            "username": username,
-            "task": todo["title"],
-            "completed": todo["completed"]
-        })
-
-    # Save the output to a JSON file
-    with open("todo_all_employees.json", "w") as file:
-        json.dump(output, file, indent=4)
-
+import sys
 
 if __name__ == '__main__':
-    main()
+    employee_id = sys.argv[1]
+    user_url = "https://jsonplaceholder.typicode.com/users/{}" \
+        .format(employee_id)
+    todos_url = "https://jsonplaceholder.typicode.com/users/{}/todos/" \
+        .format(employee_id)
 
+    user_info = requests.request('GET', user_url).json()
+    todos_info = requests.request('GET', todos_url).json()
+
+    employee_name = user_info["name"]
+    employee_username = user_info["username"]
+    task_completed = list(filter(lambda obj:
+                                 (obj["completed"] is True), todos_info))
+    number_of_done_tasks = len(task_completed)
+    total_number_of_tasks = len(todos_info)
+
+    with open(str(employee_id) + '.csv', "w") as file:
+        [file.write('"' + str(employee_id) + '",' +
+                    '"' + employee_username + '",' +
+                    '"' + str(task["completed"]) + '",' +
+                    '"' + task["title"] + '",' + "\n")
+         for task in todos_info]
